@@ -1,11 +1,22 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '@/styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import "lightbox.js-react/dist/index.css";
+import { useEffect } from "react";
+import { SlideshowLightbox, initLightboxJS } from "lightbox.js-react";
 
-const inter = Inter({ subsets: ['latin'] })
+interface Image {
+  id: string;
+  title: string;
+  image: string;
+  width: number;
+  height: number;
+}
 
-export default function Home() {
+export default function Home({ images }: { images: Image }) {
+  useEffect(() => {
+    initLightboxJS("CFC1-17A1-1CBD-0768", "Team & Company");
+  }, []);
+
   return (
     <>
       <Head>
@@ -14,110 +25,64 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
+      <main>
+        <nav className=" w-screen h-32 bg-blue-600 text-white ">
+          <div className="flex flex-col">
+            <div className="text-5xl p-10 font-semibold">Guidon Archives</div>
           </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
+          <SlideshowLightbox
+            lightboxIdentifier="lightbox1"
+            framework="next"
+            images={images}
           >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+            {Object.values(images).map((image: Image) => (
+              <div key={image.id}>
+                <Image
+                  src={image.image}
+                  alt={image.title}
+                  width={image.width / 2}
+                  height={image.height / 2}
+                  data-lightboxjs="lightbox1"
+                />
+                test
+                {image.title}
+              </div>
+            ))}
+          </SlideshowLightbox>
+        </nav>
       </main>
     </>
-  )
+  );
+}
+
+export async function getStaticProps() {
+  const results = await fetch(
+    `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/resources/image`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(
+          process.env.CLOUDINARY_API_KEY +
+            ":" +
+            process.env.CLOUDINARY_API_SECRET
+        ).toString("base64")}`,
+      },
+    }
+  ).then((res) => res.json());
+
+  const { resources } = results;
+
+  const images: Image = resources.map((image: any) => {
+    const { width, height } = image;
+    return {
+      id: image.asset_id,
+      title: image.public_id,
+      image: image.secure_url,
+      width,
+      height,
+    };
+  });
+
+  return {
+    props: { images },
+  };
 }
